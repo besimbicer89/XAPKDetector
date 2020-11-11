@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     QString sDescription;
     sDescription.append(QString("%1 v%2\n").arg(X_APPLICATIONNAME).arg(X_APPLICATIONVERSION));
-    sDescription.append(QString("%1\n").arg("Copyright(C) 2018-2020 hors<horsicq@gmail.com> Web: http://ntinfo.biz"));
+    sDescription.append(QString("%1\n").arg("Copyright(C) 2020 hors<horsicq@gmail.com> Web: http://ntinfo.biz"));
     parser.setApplicationDescription(sDescription);
     parser.addHelpOption();
     parser.addVersionOption();
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
     QCommandLineOption clRecursiveScan(QStringList()<<"r"<<"recursivescan","Recursive scan.");
     QCommandLineOption clDeepScan(QStringList()<<"d"<<"deepscan","Deep scan.");
-    QCommandLineOption clHeuristicScan(QStringList()<<"h"<<"heuristicscan","Heuristic scan.");
+    QCommandLineOption clHeuristicScan(QStringList()<<"e"<<"heuristicscan","Heuristic scan.");
     QCommandLineOption clResultAsXml(QStringList()<<"x"<<"xml","Result as XML.");
     QCommandLineOption clResultAsJson(QStringList()<<"j"<<"json","Result as JSON.");
 

@@ -27,20 +27,7 @@
 #define X_APPLICATIONVERSION "0.1"
 #define X_ORGANIZATIONNAME "NTInfo"
 #define X_ORGANIZATIONDOMAIN "ntinfo.biz"
-
-namespace NFD
-{
-    struct OPTIONS
-    {
-        bool bScanAfterOpen;
-        bool bRecursiveScan;
-        bool bDeepScan;
-        bool bHeristicScan;
-        bool bSaveLastDirectory;
-        QString sLastDirectory;
-        bool bStayOnTop;
-        bool bContext;
-    };
-}
+#define X_OPTIONSFILE "xad.ini"
+#define X_APPLICATIONFILENAME "xad"
 
 #endif // _GLOBAL_H

@@ -21,8 +21,8 @@
 #include "guimainwindow.h"
 #include "ui_guimainwindow.h"
 
-GuiMainWindow::GuiMainWindow(QWidget *parent) :
-    QMainWindow(parent),
+GuiMainWindow::GuiMainWindow(QWidget *pParent) :
+    QMainWindow(pParent),
     ui(new Ui::GuiMainWindow)
 {
     ui->setupUi(this);
@@ -31,66 +31,63 @@ GuiMainWindow::GuiMainWindow(QWidget *parent) :
 
     setAcceptDrops(true);
 
-    DialogOptions::loadOptions(&nfdOptions);
+    fwOptions={};
+
+    ui->pushButtonClassesDex->setEnabled(false);
+
+    xOptions.setName(X_OPTIONSFILE);
+
+    QList<XOptions::ID> listIDs;
+
+    listIDs.append(XOptions::ID_STYLE);
+    listIDs.append(XOptions::ID_QSS);
+    listIDs.append(XOptions::ID_LANG);
+    listIDs.append(XOptions::ID_SCANAFTEROPEN);
+    listIDs.append(XOptions::ID_STAYONTOP);
+    listIDs.append(XOptions::ID_SAVELASTDIRECTORY);
+    listIDs.append(XOptions::ID_LASTDIRECTORY);
+
+    xOptions.setValueIDs(listIDs);
+
+//    QMap<XOptions::ID,QVariant> mapDefaultValues;
+//    mapDefaultValues.insert(XOptions::ID_QSS,"");
+
+//    xOptions.setDefaultValues(mapDefaultValues);
+
+    xOptions.load();
     adjust();
 
     if(QCoreApplication::arguments().count()>1)
     {
-        _scan(QCoreApplication::arguments().at(1));
+        handleFile(QCoreApplication::arguments().at(1));
     }
 }
 
 GuiMainWindow::~GuiMainWindow()
 {
-    DialogOptions::saveOptions(&nfdOptions);
+    xOptions.save();
 
     delete ui;
 }
 
-void GuiMainWindow::scanFile(QString sFileName)
+void GuiMainWindow::handleFile(QString sFileName)
 {
-    if(sFileName!="")
-    {
-        SpecAbstract::SCAN_RESULT scanResult={0};
-
-        SpecAbstract::SCAN_OPTIONS options={0};
-
-        options.bRecursiveScan=ui->checkBoxRecursiveScan->isChecked();
-        options.bDeepScan=ui->checkBoxDeepScan->isChecked();
-        options.bHeuristicScan=ui->checkBoxHeuristicScan->isChecked();
-
-        DialogStaticScan ds(this);
-        ds.setData(sFileName,&options,&scanResult);
-        ds.exec();
-
-        if(nfdOptions.bSaveLastDirectory)
-        {
-            QFileInfo fi(sFileName);
-            nfdOptions.sLastDirectory=fi.absolutePath();
-        }
-
-        QString sSaveDirectory=nfdOptions.sLastDirectory+QDir::separator()+"result"; // mb TODO
-
-        ui->widgetResult->setData(scanResult,sSaveDirectory);
-    }
-}
-
-void GuiMainWindow::_scan(QString sName)
-{
-    QFileInfo fi(sName);
+    QFileInfo fi(sFileName);
 
     if(fi.isFile())
     {
-        ui->lineEditFileName->setText(sName);
+        ui->lineEditFileName->setText(sFileName);
         
-        scanFile(sName);
-    }
-    else if(fi.isDir())
-    {
-        DialogDirectoryScan dds(this,&nfdOptions,sName);
-        dds.exec();
+        ui->widgetArchive->setData(sFileName,&fwOptions);
 
-        adjust();
+        ui->pushButtonClassesDex->setEnabled(XArchives::isArchiveRecordPresent(sFileName,"classes.dex"));
+
+        if(xOptions.isScanAfterOpen())
+        {
+            scanFile(sFileName);
+        }
+
+        xOptions.setLastDirectory(sFileName);
     }
 }
 
@@ -101,25 +98,13 @@ void GuiMainWindow::on_pushButtonExit_clicked()
 
 void GuiMainWindow::on_pushButtonOpenFile_clicked()
 {
-    QString sDirectory;
-
-    if( (nfdOptions.bSaveLastDirectory)&&
-        (nfdOptions.sLastDirectory!="")&&
-        (QDir().exists(nfdOptions.sLastDirectory)))
-    {
-        sDirectory=nfdOptions.sLastDirectory;
-    }
+    QString sDirectory=xOptions.getLastDirectory();
 
     QString sFileName=QFileDialog::getOpenFileName(this,tr("Open file")+QString("..."),sDirectory,tr("All files")+QString(" (*)"));
 
     if(!sFileName.isEmpty())
-    {
-        ui->lineEditFileName->setText(sFileName);
-    
-        if(nfdOptions.bScanAfterOpen)
-        {
-            _scan(sFileName);
-        }
+    { 
+        handleFile(sFileName);
     }
 }
 
@@ -127,7 +112,10 @@ void GuiMainWindow::on_pushButtonScan_clicked()
 {
     QString sFileName=ui->lineEditFileName->text().trimmed();
 
-    _scan(sFileName);
+    if(sFileName!="")
+    {
+        scanFile(sFileName);
+    }
 }
 
 void GuiMainWindow::on_pushButtonAbout_clicked()
@@ -137,23 +125,23 @@ void GuiMainWindow::on_pushButtonAbout_clicked()
     di.exec();
 }
 
-void GuiMainWindow::dragEnterEvent(QDragEnterEvent *event)
+void GuiMainWindow::dragEnterEvent(QDragEnterEvent *pEvent)
 {
-    event->acceptProposedAction();
+    pEvent->acceptProposedAction();
 }
 
-void GuiMainWindow::dragMoveEvent(QDragMoveEvent *event)
+void GuiMainWindow::dragMoveEvent(QDragMoveEvent *pEvent)
 {
-    event->acceptProposedAction();
+    pEvent->acceptProposedAction();
 }
 
-void GuiMainWindow::dropEvent(QDropEvent *event)
+void GuiMainWindow::dropEvent(QDropEvent *pEvent)
 {
-    const QMimeData* mimeData=event->mimeData();
+    const QMimeData *pMimeData=pEvent->mimeData();
 
-    if(mimeData->hasUrls())
+    if(pMimeData->hasUrls())
     {
-        QList<QUrl> urlList=mimeData->urls();
+        QList<QUrl> urlList=pMimeData->urls();
 
         if(urlList.count())
         {
@@ -161,17 +149,14 @@ void GuiMainWindow::dropEvent(QDropEvent *event)
 
             sFileName=XBinary::convertFileName(sFileName);
 
-            if(nfdOptions.bScanAfterOpen)
-            {
-                _scan(sFileName);
-            }
+            handleFile(sFileName);
         }
     }
 }
 
 void GuiMainWindow::on_pushButtonOptions_clicked()
 {
-    DialogOptions dialogOptions(this,&nfdOptions);
+    DialogOptions dialogOptions(this,&xOptions);
 
     dialogOptions.exec();
 
@@ -180,30 +165,135 @@ void GuiMainWindow::on_pushButtonOptions_clicked()
 
 void GuiMainWindow::adjust()
 {
-    Qt::WindowFlags wf=windowFlags();
-
-    if(nfdOptions.bStayOnTop)
-    {
-        wf|=Qt::WindowStaysOnTopHint;
-    }
-    else
-    {
-        wf&=~(Qt::WindowStaysOnTopHint);
-    }
-    setWindowFlags(wf);
-
-    ui->checkBoxDeepScan->setChecked(nfdOptions.bDeepScan);
-    ui->checkBoxRecursiveScan->setChecked(nfdOptions.bRecursiveScan);
-    ui->checkBoxHeuristicScan->setChecked(nfdOptions.bHeristicScan);
-
-    show();
+    xOptions.adjustStayOnTop(this);
 }
 
-void GuiMainWindow::on_pushButtonDirectoryScan_clicked()
+void GuiMainWindow::on_pushButtonHex_clicked()
 {
-    DialogDirectoryScan dds(this,&nfdOptions,"");
+    QString sFileName=ui->lineEditFileName->text().trimmed();
 
-    dds.exec();
+    if(sFileName!="")
+    {
+        QFile file;
+        file.setFileName(sFileName);
 
-    adjust();
+        if(file.open(QIODevice::ReadOnly))
+        {
+            DialogHex dialogHex(this,&file);
+
+            dialogHex.exec();
+
+            file.close();
+        }
+    }
+}
+
+void GuiMainWindow::on_pushButtonStrings_clicked()
+{
+    QString sFileName=ui->lineEditFileName->text().trimmed();
+
+    if(sFileName!="")
+    {
+        QFile file;
+        file.setFileName(sFileName);
+
+        if(file.open(QIODevice::ReadOnly))
+        {
+            DialogSearchStrings dialogSearchStrings(this,&file,nullptr,true);
+
+            dialogSearchStrings.exec();
+
+            file.close();
+        }
+    }
+}
+
+void GuiMainWindow::on_pushButtonHash_clicked()
+{
+    QString sFileName=ui->lineEditFileName->text().trimmed();
+
+    if(sFileName!="")
+    {
+        QFile file;
+        file.setFileName(sFileName);
+
+        if(file.open(QIODevice::ReadOnly))
+        {
+            DialogHash dialogHash(this,&file);
+
+            dialogHash.exec();
+
+            file.close();
+        }
+    }
+}
+
+void GuiMainWindow::on_pushButtonEntropy_clicked()
+{
+    QString sFileName=ui->lineEditFileName->text().trimmed();
+
+    if(sFileName!="")
+    {
+        QFile file;
+        file.setFileName(sFileName);
+
+        if(file.open(QIODevice::ReadOnly))
+        {
+            DialogEntropy dialogEntropy(this,&file);
+
+            dialogEntropy.exec();
+
+            file.close();
+        }
+    }
+}
+
+void GuiMainWindow::scanFile(QString sFileName)
+{
+    QFile file;
+    file.setFileName(sFileName);
+
+    if(file.open(QIODevice::ReadOnly))
+    {
+        DialogStaticScan dialogStaticScan(this,&file,true);
+
+        dialogStaticScan.exec();
+
+        file.close();
+    }
+}
+
+void GuiMainWindow::on_pushButtonClassesDex_clicked()
+{
+    QString sFileName=ui->lineEditFileName->text().trimmed();
+
+    if(sFileName!="")
+    {
+        QTemporaryFile fileTemp;
+
+        if(fileTemp.open())
+        {
+            QString sTempFileName=fileTemp.fileName();
+
+            if(XArchives::decompressToFile(sFileName,"classes.dex",sTempFileName))
+            {
+                QFile file;
+                file.setFileName(sTempFileName);
+
+                if(file.open(QIODevice::ReadOnly))
+                {
+                    fwOptions.nStartType=SDEX::TYPE_HEADER;
+                    fwOptions.sTitle="classes.dex";
+
+                    DialogDEX dialogDEX(this);
+
+                    dialogDEX.setData(&file,&fwOptions);
+
+                    dialogDEX.exec();
+
+                    file.close();
+                }
+            }
+        }
+    }
 }

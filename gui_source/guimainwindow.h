@@ -26,10 +26,10 @@
 #include <QFileDialog>
 #include <QDragEnterEvent>
 #include <QMimeData>
-#include "dialogstaticscan.h"
 #include "dialogabout.h"
 #include "dialogoptions.h"
-#include "dialogdirectoryscan.h"
+#include "archive_widget.h"
+#include "xoptions.h"
 
 namespace Ui
 {
@@ -41,28 +41,33 @@ class GuiMainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit GuiMainWindow(QWidget *parent = nullptr);
+    explicit GuiMainWindow(QWidget *pParent=nullptr);
     ~GuiMainWindow() override;
 
 private slots:
-    void scanFile(QString sFileName);
-    void _scan(QString sName);
+    void handleFile(QString sFileName);
     void on_pushButtonScan_clicked();
     void on_pushButtonExit_clicked();
     void on_pushButtonOpenFile_clicked();
     void on_pushButtonAbout_clicked();
     void on_pushButtonOptions_clicked();
     void adjust();
-    void on_pushButtonDirectoryScan_clicked();
+    void on_pushButtonHex_clicked();
+    void on_pushButtonStrings_clicked();
+    void on_pushButtonHash_clicked();
+    void on_pushButtonEntropy_clicked();
+    void scanFile(QString sFileName);
+    void on_pushButtonClassesDex_clicked();
 
 protected:
-    void dragEnterEvent(QDragEnterEvent *event) override;
-    void dragMoveEvent(QDragMoveEvent *event) override;
-    void dropEvent(QDropEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *pEvent) override;
+    void dragMoveEvent(QDragMoveEvent *pEvent) override;
+    void dropEvent(QDropEvent *pEvent) override;
 
 private:
     Ui::GuiMainWindow *ui;
-    NFD::OPTIONS nfdOptions;
+    XOptions xOptions;
+    FW_DEF::OPTIONS fwOptions;
 };
 
 #endif // GUIMAINWINDOW_H

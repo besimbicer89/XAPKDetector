@@ -2,10 +2,11 @@ QT += core
 QT -= gui
 
 include(../build.pri)
+XCONFIG += use_dex
 
 CONFIG += c++11
 
-TARGET = nfdc
+TARGET = xadc
 CONFIG += console
 CONFIG -= app_bundle
 
